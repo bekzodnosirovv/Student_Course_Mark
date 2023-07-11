@@ -5,11 +5,12 @@ import com.example.entity.StudentEntity;
 import com.example.enums.Gender;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
+import com.example.mapper.StudentFilterDTO;
+import com.example.mapper.StudentFilterResultDTO;
+import com.example.repository.FilterRepository;
 import com.example.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,30 +22,21 @@ import java.util.Optional;
 
 @Service
 public class StudentService {
-
     @Autowired
     private StudentRepository studentRepository;
+    @Autowired
+    private FilterRepository filterRepository;
 
-    public StudentDTO save(StudentDTO dto) {
+    public void save(StudentDTO dto) {
         check(dto);
-        StudentEntity entity = new StudentEntity();
-        entity.setName(dto.getName());
-        entity.setSurname(dto.getSurname());
-        entity.setAge(dto.getAge());
-        entity.setGender(dto.getGender());
-        entity.setLevel(dto.getLevel());
-        entity.setCreatedDate(LocalDateTime.now());
-        studentRepository.save(entity);
-        dto.setId(entity.getId());
-        dto.setCreatedDate(entity.getCreatedDate());
-
-        return dto;
+        studentRepository.saveQuery(dto.getName(), dto.getSurname(), dto.getLevel(), dto.getAge(),
+                dto.getGender().toString(), LocalDateTime.now());
     }
 
     public List<StudentDTO> getAll() {
-        Iterable<StudentEntity> iterable = studentRepository.findAll();
+        List<StudentEntity> entityList = studentRepository.getAll();
         List<StudentDTO> list = new LinkedList<>();
-        iterable.forEach(item -> {
+        entityList.forEach(item -> {
             list.add(toDTO(item));
         });
         if (list.isEmpty()) throw new ItemNotFoundException("Student not found");
@@ -52,29 +44,22 @@ public class StudentService {
     }
 
     public StudentDTO getById(Integer id) {
-        Optional<StudentEntity> optional = studentRepository.findById(id);
+        Optional<StudentEntity> optional = studentRepository.getById(id);
         return optional.map(this::toDTO).orElseThrow(() -> new ItemNotFoundException("Student not found"));
 
     }
 
     public void update(Integer id, StudentDTO dto) {
-        Optional<StudentEntity> optional = studentRepository.findById(id);
+        Optional<StudentEntity> optional = studentRepository.getById(id);
         if (optional.isEmpty()) {
             throw new ItemNotFoundException("Student not found");
         }
-        StudentEntity entity = optional.get();
-        if (dto.getName() != null) entity.setName(dto.getName());
-        if (dto.getSurname() != null) entity.setSurname(dto.getSurname());
-        if (dto.getAge() != null) entity.setAge(dto.getAge());
-        if (dto.getLevel() != null) entity.setLevel(dto.getLevel());
-        if (dto.getGender() != null) entity.setGender(dto.getGender());
-        studentRepository.save(entity);
-
+        studentRepository.update(id, dto.getName(), dto.getSurname(), dto.getLevel(), dto.getAge());
     }
 
     public void delete(Integer id) {
         getById(id);
-        studentRepository.deleteById(id);
+        studentRepository.delete(id);
     }
 
     public List<StudentDTO> getByName(String name) {
@@ -94,47 +79,46 @@ public class StudentService {
     }
 
     public List<StudentDTO> getByGender(Gender gender) {
-        return toLIST(studentRepository.getByGender(gender));
+        return toLIST(studentRepository.getByGender(gender.toString()));
     }
 
     public List<StudentDTO> getByDate(LocalDate date) {
-        LocalDateTime from = LocalDateTime.of(date, LocalTime.MIN);
-        LocalDateTime to = LocalDateTime.of(date, LocalTime.MAX);
-        return toLIST(studentRepository.getByCreatedDateBetween(from, to));
+        return toLIST(studentRepository.getByCreatedDateBetween(LocalDateTime.of(date,
+                LocalTime.MIN), LocalDateTime.of(date, LocalTime.MAX)));
     }
+
 
     public List<StudentDTO> getByBetweenDate(LocalDate fromDate, LocalDate toDate) {
         return toLIST(studentRepository.getByCreatedDateBetween(LocalDateTime.of(fromDate,
                 LocalTime.MIN), LocalDateTime.of(toDate, LocalTime.MAX)));
     }
 
-    public Page<StudentEntity> getPagination(int page, int size) {
+    public PageImpl<StudentDTO> getPagination(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return studentRepository.findAll(pageable);
+        Page<StudentEntity> entityPage = studentRepository.findAll(pageable);
+        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
-    public Page<StudentEntity> getPaginationByLevel(int page, Integer level) {
-        Pageable pageable = PageRequest.of(page, 10);
-        return studentRepository.findAllByLevelOrderByIdDesc(pageable, level);
-    }
+    public Page<StudentDTO> getPaginationByLevel(int page, int size, Integer level) {
+        Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
+        Page<StudentEntity> entityPage = studentRepository.findAllByLevel(pageable, level);
+        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
 
-
-    public Page<StudentEntity> getPaginationByGender(int page, Gender gender) {
-        Pageable pageable = PageRequest.of(page, 10);
-        return studentRepository.findAllByGenderOrderByIdDesc(pageable, gender);
     }
 
 
-//    public Page<StudentEntity> getPaginationFilter(int page, Gender gender) {
-//        Pageable pageable = PageRequest.of(page, 10);
-//        return studentRepository.findAllByGenderOrderByIdDesc(pageable, gender);
-//    }
+    public PageImpl<StudentDTO> getPaginationByGender(int page, int size, Gender gender) {
+        Pageable pageable = PageRequest.of(page, 10, Sort.by("createdDate").descending());
+        Page<StudentEntity> entityPage = studentRepository.findAllByGender(pageable, gender);
+        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
 
+    }
 
-
-
-
-
+    public StudentFilterResultDTO<StudentDTO> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
+        StudentFilterResultDTO<StudentEntity> filterDTO = filterRepository.filterStudent(filter, page, size);
+        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("Student not found.");
+        return new StudentFilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+    }
 
 
     private List<StudentDTO> toLIST(List<StudentEntity> list) {
@@ -175,6 +159,4 @@ public class StudentService {
             throw new AppBadRequestException("No level ?");
         }
     }
-
-
 }

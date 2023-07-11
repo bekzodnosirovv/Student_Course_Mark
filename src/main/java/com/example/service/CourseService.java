@@ -6,9 +6,7 @@ import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
 import com.example.repository.CourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,21 +20,13 @@ public class CourseService {
     @Autowired
     private CourseRepository courseRepository;
 
-    public CourseDTO save(CourseDTO dto) {
+    public void save(CourseDTO dto) {
         check(dto);
-        CourseEntity entity = new CourseEntity();
-        entity.setName(dto.getName());
-        entity.setPrice(dto.getPrice());
-        entity.setDuration(dto.getDuration());
-        entity.setCreatedDate(LocalDateTime.now());
-        courseRepository.save(entity);
-        dto.setId(entity.getId());
-        dto.setCreatedDate(entity.getCreatedDate());
-        return dto;
+        courseRepository.saveQuery(dto.getName(), dto.getPrice(), dto.getDuration(), dto.getCreatedDate());
     }
 
     public List<CourseDTO> getAll() {
-        Iterable<CourseEntity> iterable = courseRepository.findAll();
+        Iterable<CourseEntity> iterable = courseRepository.getAll();
         List<CourseDTO> list = new LinkedList<>();
         iterable.forEach(item -> {
             list.add(toDTO(item));
@@ -46,25 +36,21 @@ public class CourseService {
     }
 
     public CourseDTO getById(Integer id) {
-        Optional<CourseEntity> optional = courseRepository.findById(id);
+        Optional<CourseEntity> optional = courseRepository.getById(id);
         return optional.map(this::toDTO).orElseThrow(() -> new ItemNotFoundException("Course not found"));
     }
 
     public void update(Integer id, CourseDTO dto) {
-        Optional<CourseEntity> optional = courseRepository.findById(id);
+        Optional<CourseEntity> optional = courseRepository.getById(id);
         if (optional.isEmpty()) {
             throw new ItemNotFoundException("Course not found");
         }
-        CourseEntity entity = optional.get();
-        if (dto.getName() != null) entity.setName(dto.getName());
-        if (dto.getPrice() != null) entity.setPrice(dto.getPrice());
-        if (dto.getDuration() != null) entity.setDuration(dto.getDuration());
-        courseRepository.save(entity);
+        courseRepository.update(id, dto.getName(), dto.getPrice(), dto.getDuration());
     }
 
     public void delete(Integer id) {
         getById(id);
-        courseRepository.deleteById(id);
+        courseRepository.delete(id);
     }
 
     public List<CourseDTO> getByName(String name) {
@@ -79,37 +65,40 @@ public class CourseService {
         return toLIST(courseRepository.getByDuration(duration));
     }
 
-    public List<CourseDTO> getByBetweenDate(LocalDate fromDate, LocalDate toDate) {
-        return toLIST(courseRepository.getByCreatedDateBetween(fromDate.atStartOfDay(),
-                toDate.plusDays(1).atStartOfDay()));
-    }
 
     public List<CourseDTO> getByPriceBetween(Double price1, Double price2) {
         return toLIST(courseRepository.getByPriceBetween(price1, price2));
     }
 
-    public Page<CourseEntity> getPagination(int page, int size) {
+    public List<CourseDTO> getByBetweenDate(LocalDate fromDate, LocalDate toDate) {
+        return toLIST(courseRepository.getByCreatedDateBetween(fromDate.atStartOfDay(),
+                toDate.plusDays(1).atStartOfDay()));
+    }
+
+    public PageImpl<CourseDTO> getPagination(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return courseRepository.findAll(pageable);
+        Page<CourseEntity> entityPage = courseRepository.findAll(pageable);
+        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
-    public Page<CourseEntity> getPaginationSortCreatedDate(int page) {
-        Pageable pageable = PageRequest.of(page, 10);
-        return courseRepository.findByOrderByCreatedDate(pageable);
-    }
-
-
-    public Page<CourseEntity> getPaginationByPrice(int page, Double price) {
-        Pageable pageable = PageRequest.of(page, 10);
-        return courseRepository.findAllByPriceOrderByCreatedDateDesc(pageable, price);
-    }
-
-    public Page<CourseEntity> getPaginationByPriceBetween(int page, Double from, Double to) {
-        Pageable pageable = PageRequest.of(page, 10);
-        return courseRepository.findAllByPriceBetweenOrderByCreatedDateDesc(pageable, from, to);
+    public PageImpl<CourseDTO> getPaginationSortCreatedDate(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<CourseEntity> entityPage = courseRepository.findAll(pageable);
+        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
 
+    public PageImpl<CourseDTO> getPaginationByPrice(int page, int size, Double price) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<CourseEntity> entityPage = courseRepository.findAllByPrice(pageable, price);
+        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+    }
+
+    public PageImpl<CourseDTO> getPaginationByPriceBetween(int page, int size, Double from, Double to) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<CourseEntity> entityPage = courseRepository.findAllByPriceBetween(pageable, from, to);
+        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+    }
 
 
     private List<CourseDTO> toLIST(List<CourseEntity> list) {

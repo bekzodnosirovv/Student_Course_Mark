@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class StudentCourseMarkService {
+
     @Autowired
     private StudentCourseMarkRepository repository;
 
