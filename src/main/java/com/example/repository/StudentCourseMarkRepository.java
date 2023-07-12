@@ -3,8 +3,8 @@ package com.example.repository;
 import com.example.entity.CourseEntity;
 import com.example.entity.StudentCourseMarkEntity;
 import com.example.entity.StudentEntity;
-import com.example.mapper.CourseAverageMark;
-import com.example.mapper.StudentAverageMark;
+import com.example.mapper.CourseAverageMarkDTO;
+import com.example.mapper.StudentAverageMarkDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -49,33 +49,39 @@ public interface StudentCourseMarkRepository extends CrudRepository<StudentCours
     @Query("from StudentCourseMarkEntity where student.id=:studentId and course.id=:courseId order by createdDate desc ")
     List<StudentCourseMarkEntity> findByStudentIdAndCourseIdSortDate(@Param("studentId") Integer studentId, @Param("courseId") Integer courseId);
 
-    Optional<StudentCourseMarkEntity> findFirstByIdOrderByCreatedDateAsc(Integer id);
+    @Query("from StudentCourseMarkEntity where student.id=:id order by createdDate desc limit 1")
+    Optional<StudentCourseMarkEntity> getLastMark(@Param("id") Integer id);
 
-    List<StudentCourseMarkEntity> findTop3ByStudentOrderByMarkDesc(StudentEntity student);
+    @Query("from StudentCourseMarkEntity where student.id=:id order by mark desc limit 3")
+    List<StudentCourseMarkEntity> getBig3Mark(@Param("id") Integer id);
 
-    Optional<StudentCourseMarkEntity> findFirstByStudentOrderByCreatedDateAsc(StudentEntity student);
+    @Query("from StudentCourseMarkEntity where student.id=:id order by createdDate asc limit 1")
+    Optional<StudentCourseMarkEntity> getFirstMark(@Param("id") Integer id);
 
-    Optional<StudentCourseMarkEntity> findFirstByStudentAndCourseOrderByCreatedDateAsc(StudentEntity student, CourseEntity course);
+    @Query("from StudentCourseMarkEntity where student.id=:studentId and course.id=:courseId order by createdDate desc limit 1")
+    Optional<StudentCourseMarkEntity> getByCourseFirstMark(@Param("studentId") Integer studentId, @Param("courseId") Integer courseId);
 
-    Optional<StudentCourseMarkEntity> findFirstByStudentAndCourseOrderByMarkAsc(StudentEntity student, CourseEntity course);
+    @Query("from StudentCourseMarkEntity where student.id=:studentId and course.id=:courseId order by mark limit 1")
+    Optional<StudentCourseMarkEntity> getByCourseBigMark(@Param("studentId") Integer studentId, @Param("courseId") Integer courseId);
 
-    @Query("select new com.example.mapper.StudentAverageMark(s.course.id,avg(s.mark)) from StudentCourseMarkEntity as s " +
-            "where s.student.id=:student group by s.course")
-    List<StudentAverageMark> findAverageMark(@Param("student") Integer student);
+    @Query("select new com.example.mapper.StudentAverageMarkDTO(s.student.name,s.course.name,avg(s.mark)) from StudentCourseMarkEntity as s " +
+            "where s.student.id=:studentId group by s.course")
+    List<StudentAverageMarkDTO> getAverageMark(@Param("studentId") Integer studentId);
 
-    @Query("select new com.example.mapper.StudentAverageMark(s.course.id,avg(s.mark)) from StudentCourseMarkEntity as s " +
-            "where s.student.id=:student and s.course.id=:course")
-    Optional<StudentAverageMark> findAverageMarkByCourse(@Param("student") Integer student, @Param("course") Integer course);
+    @Query("select new com.example.mapper.StudentAverageMarkDTO(s.student.name,s.course.name,avg(s.mark)) from StudentCourseMarkEntity as s " +
+            "where s.student.id=:studentId and s.course.id=:courseId")
+    Optional<StudentAverageMarkDTO> getByCourseAverageMark(@Param("studentId") Integer studentId, @Param("courseId") Integer courseId);
 
-    Long countByStudentAndMarkGreaterThan(StudentEntity student, Integer mark);
+    @Query("from StudentCourseMarkEntity as s where s.student.id=:studentId and s.mark>:mark")
+    List<StudentCourseMarkEntity> countMark(@Param("studentId") Integer studentId, @Param("mark") Integer mark);
 
-    Optional<StudentCourseMarkEntity> findTopByCourseOrderByMarkAsc(CourseEntity course);
+    @Query("select new com.example.mapper.CourseAverageMarkDTO(s.course.name,avg (s.mark)) from StudentCourseMarkEntity as s where course.id=:id")
+    Optional<CourseAverageMarkDTO> getCourseAverageMark(@Param("id") Integer id);
 
-    @Query("select new com.example.mapper.CourseAverageMark(s.course.id,avg(s.mark)) from StudentCourseMarkEntity as s " +
-            "where s.course.id=:course")
-    Optional<CourseAverageMark> findByCourseAverageMark(Integer course);
-
-    Long countByCourse(CourseEntity course);
+    @Query("from StudentCourseMarkEntity where course.id=:id order by mark desc ")
+    Optional<StudentCourseMarkEntity> getByCourseBigMark(@Param("id") Integer id);
+@Query("from StudentCourseMarkEntity where course.id=:id")
+    List<StudentCourseMarkEntity> getByCourseCount(@Param("id") Integer id);
 
     Page<StudentCourseMarkEntity> findByStudent(StudentEntity entity, Pageable pageable);
 

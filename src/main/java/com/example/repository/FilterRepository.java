@@ -2,6 +2,7 @@ package com.example.repository;
 
 import com.example.dto.CourseFilterDTO;
 import com.example.dto.FilterResultDTO;
+import com.example.dto.StudentCourseMarkFilterDTO;
 import com.example.dto.StudentFilterDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -86,6 +87,48 @@ public class FilterRepository {
             params.put("createdDateTo", LocalDateTime.of(filterDTO.getCreatedDateTo(), LocalTime.MAX));
         }
 
+        return filterResult(selectQueryBuilder, countQueryBuilder, whereQuery, page, size, params);
+    }
+
+    public FilterResultDTO<?> filterStudentCourseMark(StudentCourseMarkFilterDTO filterDTO, int page, int size) {
+
+        StringBuilder selectQueryBuilder = new StringBuilder("select s from StudentCourseMarkEntity as s where 1=1");
+        StringBuilder countQueryBuilder = new StringBuilder("select count(s) from StudentCourseMarkEntity as s where 1=1");
+        StringBuilder whereQuery = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+
+        if (filterDTO.getStudentId() != null) {
+            whereQuery.append(" and s.student.id =:studentId");
+            params.put("studentId", filterDTO.getStudentId());
+        }
+        if (filterDTO.getCourseId() != null) {
+            whereQuery.append(" and s.course.id =:courseId");
+            params.put("courseId", filterDTO.getCourseId());
+        }
+        if (filterDTO.getMarkFrom() != null) {
+            whereQuery.append(" and s.mark >=:markFrom");
+            params.put("markFrom", filterDTO.getMarkFrom());
+        }
+        if (filterDTO.getMarkTo() != null) {
+            whereQuery.append(" and s.mark <=:markTo");
+            params.put("markTo", filterDTO.getMarkTo());
+        }
+        if (filterDTO.getCreatedDateFrom() != null) {
+            whereQuery.append(" and s.createdDate >=:fromDate");
+            params.put("fromDate", LocalDateTime.of(filterDTO.getCreatedDateFrom(), LocalTime.MIN));
+        }
+        if (filterDTO.getCreatedDateTo() != null) {
+            whereQuery.append(" and s.createdDate <=:ToDate");
+            params.put("ToDate", LocalDateTime.of(filterDTO.getCreatedDateTo(), LocalTime.MAX));
+        }
+        if (filterDTO.getStudentName() != null) {
+            whereQuery.append(" and s.student.name =:studentName");
+            params.put("studentName", filterDTO.getStudentName());
+        }
+        if (filterDTO.getCourseName() != null) {
+            whereQuery.append(" and s.course.name =:courseName");
+            params.put("courseName", filterDTO.getCourseName());
+        }
         return filterResult(selectQueryBuilder, countQueryBuilder, whereQuery, page, size, params);
     }
 

@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.example.dto.StudentCourseMarkDto;
+import com.example.dto.StudentFilterDTO;
 import com.example.service.StudentCourseMarkService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -112,66 +113,103 @@ public class StudentCourseMarkController {
         return ResponseEntity.ok(studentCourseMarkService.getLastMark(id));
     }
 
+    /**
+     * 12. Studentni olgan eng katta 3ta baxosi.
+     */
     @GetMapping(value = "/getBigMark/{id}")
     public ResponseEntity<?> getBigMark(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(studentCourseMarkService.getBigMark(id));
     }
 
+    /**
+     * 13. Studentni eng birinchi olgan baxosi.
+     */
     @GetMapping(value = "/getFirstMark/{id}")
     public ResponseEntity<?> getFirstMark(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(studentCourseMarkService.getFirstMark(id));
     }
 
+    /**
+     * 14. Studenti  berilgan course dan olgan birinchi baxosi.
+     */
     @GetMapping(value = "/getByCourseFirstMark")
-    public ResponseEntity<?> getByCourseFirstMark(@RequestParam("course") Integer course,
-                                                  @RequestParam("id") Integer id) {
-        return ResponseEntity.ok(studentCourseMarkService.getByCourseFirstMark(course, id));
+    public ResponseEntity<?> getByCourseFirstMark(@RequestParam("studentId") Integer studentId,
+                                                  @RequestParam("courseId") Integer courseId) {
+        return ResponseEntity.ok(studentCourseMarkService.getByCourseFirstMark(studentId, courseId));
     }
 
+    /**
+     * 15. Studentni berilgan cuorse dan olgan eng baland baxosi.
+     */
     @GetMapping(value = "/getByCourseBigMark")
-    public ResponseEntity<?> getByCourseBigMark(@RequestParam("course") Integer course,
-                                                @RequestParam("id") Integer id) {
-        return ResponseEntity.ok(studentCourseMarkService.getByCourseBigMark(course, id));
+    public ResponseEntity<?> getByCourseBigMark(@RequestParam("studentId") Integer studentId,
+                                                @RequestParam("courseId") Integer courseId) {
+        return ResponseEntity.ok(studentCourseMarkService.getByCourseBigMark(studentId, courseId));
     }
 
+
+    /**
+     * 16. Studentni o'rtacha olgan baxolari.
+     */
     @GetMapping(value = "/getAverageMark/{id}")
     public ResponseEntity<?> getAverageMark(@PathVariable("id") Integer id) {
         return ResponseEntity.ok(studentCourseMarkService.getAverageMark(id));
     }
 
+    /**
+     * 17. Studentni berilgan curse dan olgan o'rtacha baxolari.
+     */
     @GetMapping(value = "/getAverageMarkByCourse")
-    public ResponseEntity<?> getAverageMarkByCourse(@RequestParam("id") Integer student,
-                                                    @RequestParam("course") Integer course) {
-        return ResponseEntity.ok(studentCourseMarkService.getAverageMarkByCourse(student, course));
+    public ResponseEntity<?> getAverageMarkByCourse(@RequestParam("studentId") Integer studentId,
+                                                    @RequestParam("courseId") Integer courseId) {
+        return ResponseEntity.ok(studentCourseMarkService.getAverageMarkByCourse(studentId, courseId));
     }
 
+    /**
+     * 18. Studentni berilgan baxodan katta bo'lgan baxolari soni.
+     */
     @GetMapping(value = "/getByMarkBigCount")
-    public ResponseEntity<?> getByMarkBigCount(@RequestParam("id") Integer student,
+    public ResponseEntity<?> getByMarkBigCount(@RequestParam("studentId") Integer studentId,
                                                @RequestParam("mark") Integer mark) {
-        return ResponseEntity.ok(studentCourseMarkService.getByMarkBigCount(student, mark));
+        return ResponseEntity.ok(studentCourseMarkService.getByMarkBigCount(studentId, mark));
     }
 
+    /**
+     * 19. Berilgan Cursdan eng baland baxo.
+     */
     @GetMapping(value = "/getCourseBigMark/{id}")
     public ResponseEntity<?> getCourseBigMark(@PathVariable("id") Integer course) {
         return ResponseEntity.ok(studentCourseMarkService.getCourseBigMark(course));
     }
 
+    /**
+     * 20. Berilgan Cursdan o'lingan o'rtacha baxo.
+     */
     @GetMapping(value = "/getCourseAverageMark/{id}")
     public ResponseEntity<?> getCourseAverageMark(@PathVariable("id") Integer course) {
         return ResponseEntity.ok(studentCourseMarkService.getCourseAverageMark(course));
     }
 
+    /**
+     * 21. Berilgan Course dan olingan baxolar soni.
+     */
     @GetMapping(value = "/getByCourseMarkCount/{id}")
     public ResponseEntity<?> getByCourseMarkCount(@PathVariable("id") Integer course) {
         return ResponseEntity.ok(studentCourseMarkService.getByCourseMarkCount(course));
     }
 
+    /**
+     * 22. StudentCourseMark pagination.
+     */
     @GetMapping(value = "/pagination")
     public ResponseEntity<?> getPagination(@RequestParam("page") Integer page,
                                            @RequestParam("size") Integer size) {
         return ResponseEntity.ok(studentCourseMarkService.getPagination(page, size));
     }
 
+    /**
+     * 23. StudentCourseMark pagination by given studentId. List should be sorted by createdDate.
+     */
     @GetMapping(value = "/paginationByStudent")
     public ResponseEntity<?> getPaginationByStudentId(@RequestParam("id") Integer studentId,
                                                       @RequestParam("page") Integer page,
@@ -179,10 +217,25 @@ public class StudentCourseMarkController {
         return ResponseEntity.ok(studentCourseMarkService.getPaginationByStudentId(studentId, page, size));
     }
 
+    /**
+     * 24. StudentCourseMark pagination by given courseId.  List should be sorted by createdDate.
+     */
     @GetMapping(value = "/paginationByCourse")
     public ResponseEntity<?> getPaginationByCourseId(@RequestParam("id") Integer courseId,
                                                      @RequestParam("page") Integer page,
                                                      @RequestParam("size") Integer size) {
         return ResponseEntity.ok(studentCourseMarkService.getPaginationByCourseId(courseId, page, size));
     }
+
+    /**
+     * 25. Filter with pagination. Filter items (studentId,courseId,markFrom, markTo,createdDateFrom,createdDateTo,
+     * studentName, courseName)
+     */
+    @GetMapping(value = "/pagination/filter")
+    public ResponseEntity<?> getPaginationFilter(@RequestParam(value = "page", defaultValue = "1") int page,
+                                                 @RequestParam(value = "size", defaultValue = "10") int size,
+                                                 @RequestBody StudentFilterDTO filter) {
+        return ResponseEntity.ok(studentCourseMarkService.getPaginationFilter(page - 1, size, filter));
+    }
+
 }

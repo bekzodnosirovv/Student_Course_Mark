@@ -1,14 +1,16 @@
 package com.example.service;
 
+import com.example.dto.FilterResultDTO;
 import com.example.dto.StudentCourseMarkDto;
+import com.example.dto.StudentFilterDTO;
 import com.example.entity.CourseEntity;
 import com.example.entity.StudentCourseMarkEntity;
 import com.example.entity.StudentEntity;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
-import com.example.mapper.StudentCourseMapper;
-import com.example.mapper.StudentMarkDTO;
+import com.example.mapper.*;
 import com.example.repository.CourseRepository;
+import com.example.repository.FilterRepository;
 import com.example.repository.StudentCourseMarkRepository;
 import com.example.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,8 @@ public class StudentCourseMarkService {
     private StudentRepository studentRepository;
     @Autowired
     private CourseRepository courseRepository;
+    @Autowired
+    private FilterRepository filterRepository;
 
 
     public void save(StudentCourseMarkDto dto) {
@@ -102,107 +106,116 @@ public class StudentCourseMarkService {
         LocalDateTime from1 = LocalDateTime.of(from, LocalTime.MIN);
         LocalDateTime to1 = LocalDateTime.of(to, LocalTime.MAX);
         List<StudentCourseMarkEntity> entityList = repository.findByStudentAndCreatedDateBetween(id, from1, to1);
-        if (entityList.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not.");
+        if (entityList.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return entityList.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     public List<StudentCourseMarkDto> getMarkSortDate(Integer id) {
         List<StudentCourseMarkEntity> list = repository.findByIdOrderByCreatedDateAsc(id);
         List<StudentCourseMarkDto> list1 = list.stream().map(this::toDTO).toList();
-        if (list1.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
+        if (list1.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return list1;
     }
 
     public List<StudentCourseMarkDto> getByCourseMarkSortDate(Integer studentId, Integer courseId) {
         List<StudentCourseMarkEntity> list = repository.findByStudentIdAndCourseIdSortDate(studentId, courseId);
         List<StudentCourseMarkDto> list1 = list.stream().map(this::toDTO).toList();
-        if (list1.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
+        if (list1.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return list1;
     }
 
     public StudentMarkDTO getLastMark(Integer id) {
-        Optional<StudentCourseMarkEntity> optional = repository.findFirstByIdOrderByCreatedDateAsc(id);
+        Optional<StudentCourseMarkEntity> optional = repository.getLastMark(id);
         return optional.map(entity -> {
-            StudentLastMark mark = new StudentLastMark();
+            StudentMarkDTO mark = new StudentMarkDTO();
+            mark.setStudentName(entity.getStudent().getName());
+            mark.setCourseName(entity.getCourse().getName());
             mark.setMark(entity.getMark());
-            mark.setCourse(entity.getCourse().getName());
             return mark;
-        }).orElseThrow(() -> new ItemNotFoundException("StudentCourseMark not found"));
+        }).orElseThrow(() -> new ItemNotFoundException("This student has not yet received a grade."));
     }
 
-    public StudentLastMark getBigMark(Integer id) {
-        StudentEntity entity = new StudentEntity();
-        entity.setId(id);
-        List<StudentCourseMarkEntity> list = repository.findTop3ByStudentOrderByMarkDesc(entity);
-        if (list.isEmpty()) throw new ItemNotFoundException("Student Course Mark not found.");
-        return (StudentLastMark) list.stream().map(this::toDTO).collect(Collectors.toList());
+    public List<StudentMarkDTO> getBigMark(Integer id) {
+        List<StudentCourseMarkEntity> list = repository.getBig3Mark(id);
+        if (list.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
+        return list.stream().map(entity -> {
+            StudentMarkDTO mark = new StudentMarkDTO();
+            mark.setStudentName(entity.getStudent().getName());
+            mark.setCourseName(entity.getCourse().getName());
+            mark.setMark(entity.getMark());
+            return mark;
+        }).collect(Collectors.toList());
     }
 
-    public StudentCourseMarkDto getFirstMark(Integer id) {
-        StudentEntity entity = new StudentEntity();
-        entity.setId(id);
-        Optional<StudentCourseMarkEntity> optional = repository.findFirstByStudentOrderByCreatedDateAsc(entity);
-        if (optional.isEmpty()) throw new ItemNotFoundException("The student has not received a grade yet");
-        return toDTO(optional.get());
+    public StudentMarkDTO getFirstMark(Integer id) {
+        Optional<StudentCourseMarkEntity> optional = repository.getFirstMark(id);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
+        StudentMarkDTO studentMarkDTO = new StudentMarkDTO();
+        studentMarkDTO.setStudentName(optional.get().getStudent().getName());
+        studentMarkDTO.setCourseName(optional.get().getCourse().getName());
+        studentMarkDTO.setMark(optional.get().getMark());
+        return studentMarkDTO;
     }
 
-    public StudentCourseMarkDto getByCourseFirstMark(Integer course, Integer id) {
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(id);
-        CourseEntity courseEntity = new CourseEntity();
-        courseEntity.setId(course);
-        Optional<StudentCourseMarkEntity> optional = repository.findFirstByStudentAndCourseOrderByCreatedDateAsc(studentEntity, courseEntity);
-        if (optional.isEmpty()) throw new ItemNotFoundException("The student has not received a grade yet");
-        return toDTO(optional.get());
+    public StudentMarkDTO getByCourseFirstMark(Integer studentId, Integer courseId) {
+        Optional<StudentCourseMarkEntity> optional = repository.getByCourseFirstMark(studentId, courseId);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
+        StudentMarkDTO studentMarkDTO = new StudentMarkDTO();
+        studentMarkDTO.setStudentName(optional.get().getStudent().getName());
+        studentMarkDTO.setCourseName(optional.get().getCourse().getName());
+        studentMarkDTO.setMark(optional.get().getMark());
+        return studentMarkDTO;
     }
 
-    public StudentCourseMarkDto getByCourseBigMark(Integer course, Integer id) {
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(id);
-        CourseEntity courseEntity = new CourseEntity();
-        courseEntity.setId(course);
-        Optional<StudentCourseMarkEntity> optional = repository.findFirstByStudentAndCourseOrderByMarkAsc(studentEntity, courseEntity);
-        if (optional.isEmpty()) throw new ItemNotFoundException("The student has not received a grade yet");
-        return toDTO(optional.get());
+    public StudentMarkDTO getByCourseBigMark(Integer studentId, Integer courseId) {
+        Optional<StudentCourseMarkEntity> optional = repository.getByCourseBigMark(studentId, courseId);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
+        StudentMarkDTO studentMarkDTO = new StudentMarkDTO();
+        studentMarkDTO.setStudentName(optional.get().getStudent().getName());
+        studentMarkDTO.setCourseName(optional.get().getCourse().getName());
+        studentMarkDTO.setMark(optional.get().getMark());
+        return studentMarkDTO;
     }
 
-    public List<StudentAverageMark> getAverageMark(Integer id) {
-        List<StudentAverageMark> list = repository.findAverageMark(id);
-        if (list.isEmpty()) throw new ItemNotFoundException("no ratings yet");
+    public List<StudentAverageMarkDTO> getAverageMark(Integer id) {
+        List<StudentAverageMarkDTO> list = repository.getAverageMark(id);
+        if (list.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return list;
     }
 
-    public StudentAverageMark getAverageMarkByCourse(Integer student, Integer course) {
-        Optional<StudentAverageMark> optional = repository.findAverageMarkByCourse(student, course);
-        if (optional.isEmpty()) throw new ItemNotFoundException("no ratings yet");
+    public StudentAverageMarkDTO getAverageMarkByCourse(Integer student, Integer course) {
+        Optional<StudentAverageMarkDTO> optional = repository.getByCourseAverageMark(student, course);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return optional.get();
 
     }
 
-    public Long getByMarkBigCount(Integer student, Integer mark) {
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(student);
-        return repository.countByStudentAndMarkGreaterThan(studentEntity, mark);
+    public int getByMarkBigCount(Integer student, Integer mark) {
+        List<StudentCourseMarkEntity> list = repository.countMark(student, mark);
+        if (list.isEmpty())
+            throw new ItemNotFoundException("The student did not receive a higher grade than the given grade.");
+        return list.size();
     }
 
-    public CourseMark getCourseBigMark(Integer course) {
-        CourseEntity courseEntity = new CourseEntity();
-        courseEntity.setId(course);
-        Optional<StudentCourseMarkEntity> optional = repository.findTopByCourseOrderByMarkAsc(courseEntity);
-        if (optional.isEmpty()) throw new ItemNotFoundException("Item not found");
-        return new CourseMark(optional.get().getCourse().getId(), optional.get().getMark());
+    public CourseMarkDTO getCourseBigMark(Integer courseId) {
+        Optional<StudentCourseMarkEntity> optional = repository.getByCourseBigMark(courseId);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
+        CourseMarkDTO markDTO = new CourseMarkDTO();
+        markDTO.setCourseName(optional.get().getCourse().getName());
+        markDTO.setMark(optional.get().getMark());
+        return markDTO;
     }
 
-    public CourseAverageMark getCourseAverageMark(Integer course) {
-        Optional<CourseAverageMark> optional = repository.findByCourseAverageMark(course);
-        if (optional.isEmpty()) throw new ItemNotFoundException("Item not found");
+    public CourseAverageMarkDTO getCourseAverageMark(Integer course) {
+        Optional<CourseAverageMarkDTO> optional = repository.getCourseAverageMark(course);
+        if (optional.isEmpty()) throw new ItemNotFoundException("This student has not yet received a grade.");
         return optional.get();
     }
 
-    public Long getByCourseMarkCount(Integer course) {
-        CourseEntity courseEntity = new CourseEntity();
-        courseEntity.setId(course);
-        return repository.countByCourse(courseEntity);
+    public int getByCourseMarkCount(Integer course) {
+        List<StudentCourseMarkEntity> list = repository.getByCourseCount(course);
+        if (list.isEmpty()) throw new ItemNotFoundException("No grades have been taken from this course.");
+        return list.size();
     }
 
     public PageImpl<StudentCourseMarkDto> getPagination(Integer page, Integer size) {
@@ -214,7 +227,7 @@ public class StudentCourseMarkService {
             studentDTOList.add(toDTO(entity));
         });
 
-        return new PageImpl<StudentCourseMarkDto>(studentDTOList, pageable, pageObj.getTotalElements());
+        return new PageImpl<>(studentDTOList, pageable, pageObj.getTotalElements());
 
     }
 
@@ -230,7 +243,7 @@ public class StudentCourseMarkService {
             studentDTOList.add(toDTO(item));
         });
 
-        return new PageImpl<StudentCourseMarkDto>(studentDTOList, pageable, pageObj.getTotalElements());
+        return new PageImpl<>(studentDTOList, pageable, pageObj.getTotalElements());
     }
 
     public PageImpl<StudentCourseMarkDto> getPaginationByCourseId(Integer courseId, Integer page, Integer size) {
@@ -245,7 +258,13 @@ public class StudentCourseMarkService {
             studentDTOList.add(toDTO(item));
         });
 
-        return new PageImpl<StudentCourseMarkDto>(studentDTOList, pageable, pageObj.getTotalElements());
+        return new PageImpl<>(studentDTOList, pageable, pageObj.getTotalElements());
+    }
+
+    public FilterResultDTO<?> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
+        FilterResultDTO<StudentCourseMarkEntity> filterDTO = (FilterResultDTO<StudentCourseMarkEntity>) filterRepository.filterStudentCourseMark(filter, page, size);
+        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("StudentCourseMark not found.");
+        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
     }
 
     private StudentCourseMarkDto toDTO(StudentCourseMarkEntity entity) {
