@@ -1,12 +1,12 @@
 package com.example.service;
 
+import com.example.dto.FilterResultDTO;
 import com.example.dto.StudentDTO;
+import com.example.dto.StudentFilterDTO;
 import com.example.entity.StudentEntity;
 import com.example.enums.Gender;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
-import com.example.mapper.FilterResultDTO;
-import com.example.mapper.StudentFilterDTO;
 import com.example.repository.FilterRepository;
 import com.example.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;

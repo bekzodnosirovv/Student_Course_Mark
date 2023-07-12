@@ -1,11 +1,10 @@
-package com.example.mapper;
+package com.example.dto;
 
 import com.example.enums.Gender;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter

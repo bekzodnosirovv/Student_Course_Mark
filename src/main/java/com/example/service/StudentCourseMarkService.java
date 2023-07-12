@@ -6,7 +6,11 @@ import com.example.entity.StudentCourseMarkEntity;
 import com.example.entity.StudentEntity;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
+import com.example.mapper.StudentCourseMapper;
+import com.example.mapper.StudentMarkDTO;
+import com.example.repository.CourseRepository;
 import com.example.repository.StudentCourseMarkRepository;
+import com.example.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -24,62 +28,47 @@ public class StudentCourseMarkService {
 
     @Autowired
     private StudentCourseMarkRepository repository;
+    @Autowired
+    private StudentRepository studentRepository;
+    @Autowired
+    private CourseRepository courseRepository;
 
 
-    public StudentCourseMarkDto save(StudentCourseMarkDto dto) {
+    public void save(StudentCourseMarkDto dto) {
         check(dto);
-        StudentEntity student = new StudentEntity();
-        student.setId(dto.getStudentId());
-        CourseEntity course = new CourseEntity();
-        course.setId(dto.getCourseId());
+        studentRepository.getById(dto.getStudentId());
+        courseRepository.getById(dto.getCourseId());
+        repository.saveQuery(dto.getStudentId(), dto.getCourseId(), dto.getMark(), LocalDateTime.now());
 
-        StudentCourseMarkEntity entity = new StudentCourseMarkEntity();
-        entity.setStudent(student);
-        entity.setCourse(course);
-        entity.setMark(dto.getMark());
-        entity.setCreatedDate(LocalDateTime.now());
-        repository.save(entity);
-
-        dto.setId(entity.getId());
-        dto.setCreatedDate(entity.getCreatedDate());
-
-        return dto;
-    }
-
-    public StudentCourseMarkDto getById(Integer id) {
-        Optional<StudentCourseMarkEntity> optional = repository.findById(id);
-        return optional.map(this::toDTO).orElseThrow(() -> new ItemNotFoundException("StudentCourseMark not found"));
-    }
-
-    public List<StudentCourseMarkDto> getAll() {
-        Iterable<StudentCourseMarkEntity> iterable = repository.findAll();
-        List<StudentCourseMarkDto> list = new LinkedList<>();
-        iterable.forEach(entity -> list.add(toDTO(entity)));
-        if (list.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
-        return list;
     }
 
     public void update(StudentCourseMarkDto dto, Integer id) {
-        Optional<StudentCourseMarkEntity> optional = repository.findById(id);
+        Optional<StudentCourseMarkEntity> optional = repository.getById(id);
         if (optional.isEmpty()) {
             throw new ItemNotFoundException("StudentCourseMark not found");
         }
-        StudentCourseMarkEntity entity = optional.get();
-        if (dto.getStudentId() != null) {
-            StudentEntity student = new StudentEntity();
-            student.setId(dto.getStudentId());
-            entity.setStudent(student);
-        }
-        if (dto.getCourseId() != null) {
-            CourseEntity course = new CourseEntity();
-            course.setId(dto.getCourseId());
-            entity.setCourse(course);
-        }
-        repository.save(entity);
+        StudentEntity student = new StudentEntity();
+        CourseEntity course = new CourseEntity();
+        Integer mark;
+
+        if (dto.getStudentId() != null) student.setId(dto.getStudentId());
+        else student.setId(optional.get().getStudent().getId());
+        if (dto.getCourseId() != null) course.setId(dto.getCourseId());
+        else course.setId(optional.get().getCourse().getId());
+        if (dto.getMark() != null) mark = dto.getMark();
+        else mark = optional.get().getMark();
+
+        repository.update(id, student, course, mark);
+
+    }
+
+    public StudentCourseMarkDto getById(Integer id) {
+        Optional<StudentCourseMarkEntity> optional = repository.getById(id);
+        return optional.map(this::toDTO).orElseThrow(() -> new ItemNotFoundException("StudentCourseMark not found"));
     }
 
     public StudentCourseMapper getByIdDetail(Integer id) {
-        Optional<StudentCourseMarkEntity> optional = repository.findById(id);
+        Optional<StudentCourseMarkEntity> optional = repository.getById(id);
         if (optional.isEmpty()) {
             throw new ItemNotFoundException("StudentCourseMark not found");
         }
@@ -96,34 +85,42 @@ public class StudentCourseMarkService {
         return mapper;
     }
 
-    public List<StudentCourseMarkDto> getByDateMark(Integer id, LocalDate date) {
-        LocalDateTime from = LocalDateTime.of(date, LocalTime.MIN);
-        LocalDateTime to = LocalDateTime.of(date, LocalTime.MAX);
-        StudentEntity entity = new StudentEntity();
-        entity.setId(id);
-        List<StudentCourseMarkEntity> entityList = repository.findByStudentAndCreatedDateBetween(entity, from, to);
-        if (entityList.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not.");
-        return entityList.stream().map(this::toDTO).collect(Collectors.toList());
+    public void delete(Integer id) {
+        getById(id);
+        repository.deleteById(id);
+    }
+
+    public List<StudentCourseMarkDto> getAll() {
+        Iterable<StudentCourseMarkEntity> iterable = repository.getAll();
+        List<StudentCourseMarkDto> list = new LinkedList<>();
+        iterable.forEach(entity -> list.add(toDTO(entity)));
+        if (list.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
+        return list;
     }
 
     public List<StudentCourseMarkDto> getByDateMarkBetween(Integer id, LocalDate from, LocalDate to) {
         LocalDateTime from1 = LocalDateTime.of(from, LocalTime.MIN);
         LocalDateTime to1 = LocalDateTime.of(to, LocalTime.MAX);
-        StudentEntity student = new StudentEntity();
-        student.setId(id);
-        List<StudentCourseMarkEntity> entityList = repository.findByStudentAndCreatedDateBetween(student, from1, to1);
+        List<StudentCourseMarkEntity> entityList = repository.findByStudentAndCreatedDateBetween(id, from1, to1);
         if (entityList.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not.");
         return entityList.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    public List<StudentCourseMarkDto> getByIdSort(Integer id) {
+    public List<StudentCourseMarkDto> getMarkSortDate(Integer id) {
         List<StudentCourseMarkEntity> list = repository.findByIdOrderByCreatedDateAsc(id);
         List<StudentCourseMarkDto> list1 = list.stream().map(this::toDTO).toList();
-        if (list1.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not.");
+        if (list1.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
         return list1;
     }
 
-    public StudentLastMark getLastMark(Integer id) {
+    public List<StudentCourseMarkDto> getByCourseMarkSortDate(Integer studentId, Integer courseId) {
+        List<StudentCourseMarkEntity> list = repository.findByStudentIdAndCourseIdSortDate(studentId, courseId);
+        List<StudentCourseMarkDto> list1 = list.stream().map(this::toDTO).toList();
+        if (list1.isEmpty()) throw new ItemNotFoundException("StudentCourseMark not found.");
+        return list1;
+    }
+
+    public StudentMarkDTO getLastMark(Integer id) {
         Optional<StudentCourseMarkEntity> optional = repository.findFirstByIdOrderByCreatedDateAsc(id);
         return optional.map(entity -> {
             StudentLastMark mark = new StudentLastMark();
@@ -222,7 +219,7 @@ public class StudentCourseMarkService {
     }
 
     public PageImpl<StudentCourseMarkDto> getPaginationByStudentId(Integer studentId, Integer page, Integer size) {
-        Pageable pageable = PageRequest.of(page, size,  Sort.by("createdDate").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         StudentEntity entity = new StudentEntity();
         entity.setId(studentId);
 
@@ -235,8 +232,9 @@ public class StudentCourseMarkService {
 
         return new PageImpl<StudentCourseMarkDto>(studentDTOList, pageable, pageObj.getTotalElements());
     }
+
     public PageImpl<StudentCourseMarkDto> getPaginationByCourseId(Integer courseId, Integer page, Integer size) {
-        Pageable pageable = PageRequest.of(page, size,  Sort.by("createdDate").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         CourseEntity entity = new CourseEntity();
         entity.setId(courseId);
 
@@ -249,6 +247,7 @@ public class StudentCourseMarkService {
 
         return new PageImpl<StudentCourseMarkDto>(studentDTOList, pageable, pageObj.getTotalElements());
     }
+
     private StudentCourseMarkDto toDTO(StudentCourseMarkEntity entity) {
         StudentCourseMarkDto dto = new StudentCourseMarkDto();
         dto.setId(entity.getId());
@@ -265,13 +264,9 @@ public class StudentCourseMarkService {
         if (dto.getCourseId() == null) {
             throw new AppBadRequestException("No course id ?");
         }
+        if (dto.getMark() == null) {
+            throw new AppBadRequestException("No mark ?");
+        }
     }
-
-
-    public void delete(Integer id) {
-        getById(id);
-        repository.deleteById(id);
-    }
-
 
 }

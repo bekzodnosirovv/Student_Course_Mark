@@ -1,8 +1,7 @@
 package com.example.controller;
 
 import com.example.dto.CourseDTO;
-import com.example.mapper.CourseFilterDTO;
-import com.example.mapper.StudentFilterDTO;
+import com.example.dto.CourseFilterDTO;
 import com.example.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

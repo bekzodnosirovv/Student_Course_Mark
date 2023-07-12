@@ -1,12 +1,11 @@
 package com.example.service;
 
 import com.example.dto.CourseDTO;
+import com.example.dto.CourseFilterDTO;
+import com.example.dto.FilterResultDTO;
 import com.example.entity.CourseEntity;
-import com.example.entity.StudentEntity;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
-import com.example.mapper.CourseFilterDTO;
-import com.example.mapper.FilterResultDTO;
 import com.example.repository.CourseRepository;
 import com.example.repository.FilterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +27,7 @@ public class CourseService {
 
     public void save(CourseDTO dto) {
         check(dto);
-        courseRepository.saveQuery(dto.getName(), dto.getPrice(), dto.getDuration(), dto.getCreatedDate());
+        courseRepository.saveQuery(dto.getName(), dto.getPrice(), dto.getDuration(), LocalDateTime.now());
     }
 
     public List<CourseDTO> getAll() {

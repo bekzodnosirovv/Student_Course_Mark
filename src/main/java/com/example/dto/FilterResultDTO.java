@@ -1,4 +1,4 @@
-package com.example.mapper;
+package com.example.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -29,7 +29,7 @@ public interface CourseRepository extends CrudRepository<CourseEntity, Integer>,
     Optional<CourseEntity> getById(@Param("id") Integer id);
 
     @Query("from CourseEntity ")
-    List<CourseEntity> getAll();
+    Iterable<CourseEntity> getAll();
 
     @Transactional
     @Modifying

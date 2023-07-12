@@ -1,9 +1,8 @@
 package com.example.repository;
 
-
-import com.example.mapper.CourseFilterDTO;
-import com.example.mapper.FilterResultDTO;
-import com.example.mapper.StudentFilterDTO;
+import com.example.dto.CourseFilterDTO;
+import com.example.dto.FilterResultDTO;
+import com.example.dto.StudentFilterDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import org.springframework.beans.factory.annotation.Autowired;
