@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.dto.FilterResultDTO;
 import com.example.dto.StudentCourseMarkDto;
+import com.example.dto.StudentCourseMarkFilterDTO;
 import com.example.dto.StudentFilterDTO;
 import com.example.entity.CourseEntity;
 import com.example.entity.StudentCourseMarkEntity;
@@ -261,10 +262,10 @@ public class StudentCourseMarkService {
         return new PageImpl<>(studentDTOList, pageable, pageObj.getTotalElements());
     }
 
-    public FilterResultDTO<?> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
+    public PageImpl<?> getPaginationFilter(int page, int size, StudentCourseMarkFilterDTO filter) {
         FilterResultDTO<StudentCourseMarkEntity> filterDTO = (FilterResultDTO<StudentCourseMarkEntity>) filterRepository.filterStudentCourseMark(filter, page, size);
-        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("StudentCourseMark not found.");
-        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+        return new PageImpl<>(filterDTO.getList().stream().map(this::toDTO).toList(), PageRequest.of(page, size),
+                filterDTO.getTotalCount());
     }
 
     private StudentCourseMarkDto toDTO(StudentCourseMarkEntity entity) {

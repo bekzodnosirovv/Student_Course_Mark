@@ -54,7 +54,7 @@ public interface StudentRepository extends CrudRepository<StudentEntity, Integer
     List<StudentEntity> getByLevel(@Param("level") Integer level);
 
     @Query("from StudentEntity where gender=:gender")
-    List<StudentEntity> getByGender(@Param("gender") String gender);
+    List<StudentEntity> getByGender(@Param("gender") Gender gender);
 
     @Query("from StudentEntity where createdDate between :fromDate and :toDate")
     List<StudentEntity> getByCreatedDateBetween(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);

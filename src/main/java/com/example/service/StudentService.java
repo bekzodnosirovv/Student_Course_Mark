@@ -79,7 +79,7 @@ public class StudentService {
     }
 
     public List<StudentDTO> getByGender(Gender gender) {
-        return toLIST(studentRepository.getByGender(gender.toString()));
+        return toLIST(studentRepository.getByGender(gender));
     }
 
     public List<StudentDTO> getByDate(LocalDate date) {
@@ -114,10 +114,10 @@ public class StudentService {
 
     }
 
-    public FilterResultDTO<?> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
+    public PageImpl<?> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
         FilterResultDTO<StudentEntity> filterDTO = (FilterResultDTO<StudentEntity>) filterRepository.filterStudent(filter, page, size);
-        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("Student not found.");
-        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+        return new PageImpl<>(filterDTO.getList().stream().map(this::toDTO).toList(), PageRequest.of(page, size),
+                filterDTO.getTotalCount());
     }
 
 

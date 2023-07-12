@@ -105,10 +105,10 @@ public class CourseService {
         return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
-    public FilterResultDTO<?> getPaginationFilter(int page, int size, CourseFilterDTO filter) {
+    public PageImpl<?> getPaginationFilter(int page, int size, CourseFilterDTO filter) {
         FilterResultDTO<CourseEntity> filterDTO = (FilterResultDTO<CourseEntity>) filterRepository.filterCourse(filter, page, size);
-        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("Course not found.");
-        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+        return new PageImpl<>(filterDTO.getList().stream().map(this::toDTO).toList(), PageRequest.of(page, size),
+                filterDTO.getTotalCount());
     }
 
     private List<CourseDTO> toLIST(List<CourseEntity> list) {

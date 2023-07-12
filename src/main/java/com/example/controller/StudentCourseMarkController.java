@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import com.example.dto.StudentCourseMarkDto;
+import com.example.dto.StudentCourseMarkFilterDTO;
 import com.example.dto.StudentFilterDTO;
 import com.example.service.StudentCourseMarkService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -234,7 +235,7 @@ public class StudentCourseMarkController {
     @GetMapping(value = "/pagination/filter")
     public ResponseEntity<?> getPaginationFilter(@RequestParam(value = "page", defaultValue = "1") int page,
                                                  @RequestParam(value = "size", defaultValue = "10") int size,
-                                                 @RequestBody StudentFilterDTO filter) {
+                                                 @RequestBody StudentCourseMarkFilterDTO filter) {
         return ResponseEntity.ok(studentCourseMarkService.getPaginationFilter(page - 1, size, filter));
     }
 
