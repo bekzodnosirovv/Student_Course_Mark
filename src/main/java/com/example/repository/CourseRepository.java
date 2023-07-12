@@ -58,7 +58,6 @@ public interface CourseRepository extends CrudRepository<CourseEntity, Integer>,
     List<CourseEntity> getByCreatedDateBetween(@Param("fromDate") LocalDateTime fromDate,
                                                @Param("toDate") LocalDateTime toDate);
 
-    Page<CourseEntity> findByOrderByCreatedDate(Pageable pageable);
 
     Page<CourseEntity> findAllByPrice(Pageable pageable, Double price);
 

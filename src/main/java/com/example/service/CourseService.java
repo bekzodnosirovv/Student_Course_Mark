@@ -2,9 +2,13 @@ package com.example.service;
 
 import com.example.dto.CourseDTO;
 import com.example.entity.CourseEntity;
+import com.example.entity.StudentEntity;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
+import com.example.mapper.CourseFilterDTO;
+import com.example.mapper.FilterResultDTO;
 import com.example.repository.CourseRepository;
+import com.example.repository.FilterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,8 @@ import java.util.Optional;
 public class CourseService {
     @Autowired
     private CourseRepository courseRepository;
+    @Autowired
+    private FilterRepository filterRepository;
 
     public void save(CourseDTO dto) {
         check(dto);
@@ -78,28 +84,33 @@ public class CourseService {
     public PageImpl<CourseDTO> getPagination(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<CourseEntity> entityPage = courseRepository.findAll(pageable);
-        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
     public PageImpl<CourseDTO> getPaginationSortCreatedDate(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<CourseEntity> entityPage = courseRepository.findAll(pageable);
-        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
 
     public PageImpl<CourseDTO> getPaginationByPrice(int page, int size, Double price) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<CourseEntity> entityPage = courseRepository.findAllByPrice(pageable, price);
-        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
     public PageImpl<CourseDTO> getPaginationByPriceBetween(int page, int size, Double from, Double to) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<CourseEntity> entityPage = courseRepository.findAllByPriceBetween(pageable, from, to);
-        return new PageImpl<CourseDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
+    public FilterResultDTO<?> getPaginationFilter(int page, int size, CourseFilterDTO filter) {
+        FilterResultDTO<CourseEntity> filterDTO = (FilterResultDTO<CourseEntity>) filterRepository.filterCourse(filter, page, size);
+        if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("Course not found.");
+        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+    }
 
     private List<CourseDTO> toLIST(List<CourseEntity> list) {
         if (list.isEmpty()) throw new ItemNotFoundException("Course not found");

@@ -1,6 +1,8 @@
 package com.example.controller;
 
 import com.example.dto.CourseDTO;
+import com.example.mapper.CourseFilterDTO;
+import com.example.mapper.StudentFilterDTO;
 import com.example.service.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -142,6 +144,16 @@ public class CourseController {
                                                          @RequestParam(value = "size", defaultValue = "10") int size,
                                                          @RequestParam("from") Double from,
                                                          @RequestParam("to") Double to) {
-        return ResponseEntity.ok(courseService.getPaginationByPriceBetween(page - 1,size, from, to));
+        return ResponseEntity.ok(courseService.getPaginationByPriceBetween(page - 1, size, from, to));
+    }
+
+    /**
+     * 13. Filter with pagination. Filter items (id,name,price,duration,createdDateFrom,createdDateTo)
+     */
+    @GetMapping(value = "/pagination/filter")
+    public ResponseEntity<?> getPaginationFilter(@RequestParam(value = "page", defaultValue = "1") int page,
+                                                 @RequestParam(value = "size", defaultValue = "10") int size,
+                                                 @RequestBody CourseFilterDTO filter) {
+        return ResponseEntity.ok(courseService.getPaginationFilter(page - 1, size, filter));
     }
 }

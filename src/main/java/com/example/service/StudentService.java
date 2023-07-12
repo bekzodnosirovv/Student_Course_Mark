@@ -5,8 +5,8 @@ import com.example.entity.StudentEntity;
 import com.example.enums.Gender;
 import com.example.exp.AppBadRequestException;
 import com.example.exp.ItemNotFoundException;
+import com.example.mapper.FilterResultDTO;
 import com.example.mapper.StudentFilterDTO;
-import com.example.mapper.StudentFilterResultDTO;
 import com.example.repository.FilterRepository;
 import com.example.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,13 +96,13 @@ public class StudentService {
     public PageImpl<StudentDTO> getPagination(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<StudentEntity> entityPage = studentRepository.findAll(pageable);
-        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
     }
 
     public Page<StudentDTO> getPaginationByLevel(int page, int size, Integer level) {
         Pageable pageable = PageRequest.of(page, 10, Sort.by("id").descending());
         Page<StudentEntity> entityPage = studentRepository.findAllByLevel(pageable, level);
-        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
 
     }
 
@@ -110,14 +110,14 @@ public class StudentService {
     public PageImpl<StudentDTO> getPaginationByGender(int page, int size, Gender gender) {
         Pageable pageable = PageRequest.of(page, 10, Sort.by("createdDate").descending());
         Page<StudentEntity> entityPage = studentRepository.findAllByGender(pageable, gender);
-        return new PageImpl<StudentDTO>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
+        return new PageImpl<>(entityPage.getContent().stream().map(this::toDTO).toList(), pageable, entityPage.getTotalElements());
 
     }
 
-    public StudentFilterResultDTO<StudentDTO> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
-        StudentFilterResultDTO<StudentEntity> filterDTO = filterRepository.filterStudent(filter, page, size);
+    public FilterResultDTO<?> getPaginationFilter(int page, int size, StudentFilterDTO filter) {
+        FilterResultDTO<StudentEntity> filterDTO = (FilterResultDTO<StudentEntity>) filterRepository.filterStudent(filter, page, size);
         if (filterDTO.getTotalCount() == 0) throw new ItemNotFoundException("Student not found.");
-        return new StudentFilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
+        return new FilterResultDTO<>(filterDTO.getList().stream().map(this::toDTO).toList(), filterDTO.getTotalCount());
     }
 
 
